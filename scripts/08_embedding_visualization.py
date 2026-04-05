@@ -36,7 +36,7 @@ DBAMP_TEST_CSV = '../data/dbamp_test.csv'
 DRAMP_TEST_CSV = '../data/dramp_test.csv'
 
 USE_SAVED_WEIGHTS = True
-OUTPUT_DIR = '../results/embedding_viz'
+OUTPUT_DIR = '../results/ASL/embedding_viz'
 
 LABEL_COLS = ['antimicrobial', 'antiviral', 'antifungal', 'anticancer']
 N_LABELS = len(LABEL_COLS)
