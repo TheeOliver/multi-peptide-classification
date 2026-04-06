@@ -3,6 +3,7 @@ import torch.nn as nn
 import numpy as np
 import pandas as pd
 import matplotlib
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -25,22 +26,22 @@ warnings.filterwarnings('ignore')
 
 PROTBERT_DBAMP_PTH = '../results/protbert_multilabel_dbamp_final2.pth'
 PROTBERT_DRAMP_PTH = '../results/protbert_multilabel_dramp_final2.pth'
-ESM2_DBAMP_PTH     = '../results/esm2_multilabel_dbamp_final2.pth'
-ESM2_DRAMP_PTH     = '../results/esm2_multilabel_dramp_final2.pth'
-PROTT5_DBAMP_PTH   = '../results/prott5_multilabel_dbamp_final2.pth'
-PROTT5_DRAMP_PTH   = '../results/prott5_multilabel_dramp_final2.pth'
+ESM2_DBAMP_PTH = '../results/esm2_multilabel_dbamp_final2.pth'
+ESM2_DRAMP_PTH = '../results/esm2_multilabel_dramp_final2.pth'
+PROTT5_DBAMP_PTH = '../results/prott5_multilabel_dbamp_final2.pth'
+PROTT5_DRAMP_PTH = '../results/prott5_multilabel_dramp_final2.pth'
 
 DBAMP_TEST_CSV = '../data/dbamp_test.csv'
 DRAMP_TEST_CSV = '../data/dramp_test.csv'
 
 USE_SAVED_WEIGHTS = True
-OUTPUT_DIR  = '../results/error_analysis2'
-BATCH_SIZE  = 64
-THRESHOLD   = 0.5
+OUTPUT_DIR = '../results/error_analysis2'
+BATCH_SIZE = 64
+THRESHOLD = 0.5
 
 # Label definition — must match training scripts
 LABEL_COLS = ['antimicrobial', 'antiviral', 'antifungal', 'anticancer']
-N_LABELS   = len(LABEL_COLS)
+N_LABELS = len(LABEL_COLS)
 
 # ── IEEE Color Palette ──────────────────────────────────────────────────────
 # Based on standard IEEE publication color guidelines:
@@ -50,75 +51,78 @@ N_LABELS   = len(LABEL_COLS)
 #   #A2142F  dark red        #808080  neutral gray
 
 LABEL_COLORS = {
-    'antimicrobial': '#0072BD',   # IEEE blue
-    'antiviral':     '#D95319',   # orange-red
-    'antifungal':    '#77AC30',   # green
-    'anticancer':    '#7E2F8E',   # purple
+    'antimicrobial': '#0072BD',  # IEEE blue
+    'antiviral': '#D95319',  # orange-red
+    'antifungal': '#77AC30',  # green
+    'anticancer': '#7E2F8E',  # purple
 }
 
 # Error-type colours (TP/TN/FP/FN)
 _ERROR_COLORS = {
-    'TP': '#77AC30',   # green   – correct positive
-    'TN': '#0072BD',   # blue    – correct negative
-    'FP': '#EDB120',   # gold    – false alarm
-    'FN': '#D95319',   # orange-red – missed positive
+    'TP': '#77AC30',  # green   – correct positive
+    'TN': '#0072BD',  # blue    – correct negative
+    'FP': '#EDB120',  # gold    – false alarm
+    'FN': '#D95319',  # orange-red – missed positive
 }
 
 # Dataset bar colours
 _DS_COLORS = {
-    'dbAMP': '#0072BD',   # IEEE blue
-    'DRAMP': '#D95319',   # orange-red
+    'dbAMP': '#0072BD',  # IEEE blue
+    'DRAMP': '#D95319',  # orange-red
 }
 
 # Model colours for grouped bar charts
 _MODEL_COLORS = {
-    'ESM-2':    '#0072BD',
+    'ESM-2': '#0072BD',
     'ProtBERT': '#D95319',
-    'ProtT5':   '#EDB120',
+    'ProtT5': '#EDB120',
 }
 
 # Global matplotlib style – clean, publication-ready
 plt.rcParams.update({
-    'figure.dpi':        150,
-    'font.family':       'serif',
-    'font.size':         9,
-    'axes.linewidth':    0.8,
-    'axes.edgecolor':    '#333333',
-    'axes.grid':         True,
-    'grid.color':        '#CCCCCC',
-    'grid.linewidth':    0.5,
-    'grid.alpha':        0.5,
-    'xtick.direction':   'in',
-    'ytick.direction':   'in',
+    'figure.dpi': 150,
+    'font.family': 'serif',
+    'font.size': 9,
+    'axes.linewidth': 0.8,
+    'axes.edgecolor': '#333333',
+    'axes.grid': True,
+    'grid.color': '#CCCCCC',
+    'grid.linewidth': 0.5,
+    'grid.alpha': 0.5,
+    'xtick.direction': 'in',
+    'ytick.direction': 'in',
     'xtick.major.width': 0.8,
     'ytick.major.width': 0.8,
     'legend.framealpha': 0.9,
-    'legend.edgecolor':  '#AAAAAA',
+    'legend.edgecolor': '#AAAAAA',
 })
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 HYDROPHOBICITY = {
-    'A':  1.8, 'R': -4.5, 'N': -3.5, 'D': -3.5, 'C':  2.5,
-    'Q': -3.5, 'E': -3.5, 'G': -0.4, 'H': -3.2, 'I':  4.5,
-    'L':  3.8, 'K': -3.9, 'M':  1.9, 'F':  2.8, 'P': -1.6,
-    'S': -0.8, 'T': -0.7, 'W': -0.9, 'Y': -1.3, 'V':  4.2,
-    'X':  0.0,
+    'A': 1.8, 'R': -4.5, 'N': -3.5, 'D': -3.5, 'C': 2.5,
+    'Q': -3.5, 'E': -3.5, 'G': -0.4, 'H': -3.2, 'I': 4.5,
+    'L': 3.8, 'K': -3.9, 'M': 1.9, 'F': 2.8, 'P': -1.6,
+    'S': -0.8, 'T': -0.7, 'W': -0.9, 'Y': -1.3, 'V': 4.2,
+    'X': 0.0,
 }
 CHARGE = {
-    'A':  0, 'R':  1, 'N':  0, 'D': -1, 'C':  0,
-    'Q':  0, 'E': -1, 'G':  0, 'H':  0, 'I':  0,
-    'L':  0, 'K':  1, 'M':  0, 'F':  0, 'P':  0,
-    'S':  0, 'T':  0, 'W':  0, 'Y':  0, 'V':  0,
-    'X':  0,
+    'A': 0, 'R': 1, 'N': 0, 'D': -1, 'C': 0,
+    'Q': 0, 'E': -1, 'G': 0, 'H': 0, 'I': 0,
+    'L': 0, 'K': 1, 'M': 0, 'F': 0, 'P': 0,
+    'S': 0, 'T': 0, 'W': 0, 'Y': 0, 'V': 0,
+    'X': 0,
 }
+
 
 def seq_hydrophobicity(seq):
     vals = [HYDROPHOBICITY.get(aa, 0.0) for aa in seq.upper()]
     return np.mean(vals) if vals else 0.0
 
+
 def seq_charge(seq):
     return sum(CHARGE.get(aa, 0) for aa in seq.upper())
+
 
 def seq_length(seq):
     return len(seq)
@@ -127,13 +131,13 @@ def seq_length(seq):
 class ProtBERTMultilabelClassifier(nn.Module):
     def __init__(self, n_labels=N_LABELS, dropout=0.3):
         super().__init__()
-        self.bert       = BertModel.from_pretrained('Rostlab/prot_bert')
-        self.dropout    = nn.Dropout(dropout)
+        self.bert = BertModel.from_pretrained('Rostlab/prot_bert')
+        self.dropout = nn.Dropout(dropout)
         self.classifier = nn.Linear(1024, n_labels)
 
     def forward(self, input_ids, attention_mask):
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        cls     = outputs.last_hidden_state[:, 0, :]
+        cls = outputs.last_hidden_state[:, 0, :]
         return self.classifier(self.dropout(cls))
 
 
@@ -141,13 +145,13 @@ class ESM2MultilabelClassifier(nn.Module):
     def __init__(self, model_name='facebook/esm2_t6_8M_UR50D',
                  n_labels=N_LABELS, dropout=0.3):
         super().__init__()
-        self.esm        = EsmModel.from_pretrained(model_name)
-        self.dropout    = nn.Dropout(dropout)
+        self.esm = EsmModel.from_pretrained(model_name)
+        self.dropout = nn.Dropout(dropout)
         self.classifier = nn.Linear(self.esm.config.hidden_size, n_labels)
 
     def forward(self, input_ids, attention_mask):
         outputs = self.esm(input_ids=input_ids, attention_mask=attention_mask)
-        cls     = outputs.last_hidden_state[:, 0, :]
+        cls = outputs.last_hidden_state[:, 0, :]
         return self.classifier(self.dropout(cls))
 
 
@@ -159,14 +163,14 @@ class ProtT5MultilabelClassifier(nn.Module):
         if freeze_t5:
             for param in self.t5.parameters():
                 param.requires_grad = False
-        self.dropout    = nn.Dropout(dropout)
+        self.dropout = nn.Dropout(dropout)
         self.classifier = nn.Linear(self.t5.config.d_model, n_labels)
 
     def forward(self, input_ids, attention_mask):
-        outputs    = self.t5(input_ids=input_ids, attention_mask=attention_mask)
+        outputs = self.t5(input_ids=input_ids, attention_mask=attention_mask)
         embeddings = outputs.last_hidden_state
-        mask_exp   = attention_mask.unsqueeze(-1).expand(embeddings.size()).float()
-        mean_emb   = torch.sum(embeddings * mask_exp, 1) / torch.clamp(mask_exp.sum(1), min=1e-9)
+        mask_exp = attention_mask.unsqueeze(-1).expand(embeddings.size()).float()
+        mean_emb = torch.sum(embeddings * mask_exp, 1) / torch.clamp(mask_exp.sum(1), min=1e-9)
         return self.classifier(self.dropout(mean_emb))
 
 
@@ -185,7 +189,7 @@ def format_sequence(sequence, model_type):
     if model_type == 'bert':
         return ' '.join(list(sequence))
     elif model_type == 't5':
-        seq = sequence.replace('U','X').replace('Z','X').replace('O','X').replace('B','X')
+        seq = sequence.replace('U', 'X').replace('Z', 'X').replace('O', 'X').replace('B', 'X')
         return f"<AA2fold> {' '.join(list(seq))}"
     else:
         return sequence
@@ -194,10 +198,10 @@ def format_sequence(sequence, model_type):
 def run_inference(df, model, tokenizer, model_type):
     all_probs = []
     sequences = df['sequence'].tolist()
-    n         = len(sequences)
+    n = len(sequences)
 
     for start in range(0, n, BATCH_SIZE):
-        batch     = sequences[start : start + BATCH_SIZE]
+        batch = sequences[start: start + BATCH_SIZE]
         formatted = [format_sequence(s, model_type) for s in batch]
 
         encoding = tokenizer(
@@ -211,14 +215,14 @@ def run_inference(df, model, tokenizer, model_type):
 
         with torch.no_grad():
             logits = model(encoding['input_ids'], encoding['attention_mask'])
-            probs  = torch.sigmoid(logits)
+            probs = torch.sigmoid(logits)
 
         all_probs.append(probs.cpu().numpy())
 
         if (start // BATCH_SIZE + 1) % 5 == 0:
-            print(f'    {min(start+BATCH_SIZE, n)}/{n} done...')
+            print(f'    {min(start + BATCH_SIZE, n)}/{n} done...')
 
-    pred_probs  = np.vstack(all_probs)
+    pred_probs = np.vstack(all_probs)
     pred_binary = (pred_probs >= THRESHOLD).astype(int)
     return pred_probs, pred_binary
 
@@ -232,11 +236,11 @@ def build_error_df(df, true_labels, pred_binary, pred_probs,
     records = []
     for i, seq in enumerate(df['sequence']):
         rec = {
-            'model':          model_name,
-            'dataset':        dataset_name,
-            'sequence':       seq,
-            'length':         seq_length(seq),
-            'charge':         seq_charge(seq),
+            'model': model_name,
+            'dataset': dataset_name,
+            'sequence': seq,
+            'length': seq_length(seq),
+            'charge': seq_charge(seq),
             'hydrophobicity': seq_hydrophobicity(seq),
         }
         n_errors = 0
@@ -245,20 +249,24 @@ def build_error_df(df, true_labels, pred_binary, pred_probs,
             p = int(pred_binary[i, j])
             prob = round(float(pred_probs[i, j]), 4)
 
-            if   t == 1 and p == 1: etype = 'TP'
-            elif t == 0 and p == 0: etype = 'TN'
-            elif t == 0 and p == 1: etype = 'FP'
-            else:                   etype = 'FN'   # missed positive
+            if t == 1 and p == 1:
+                etype = 'TP'
+            elif t == 0 and p == 0:
+                etype = 'TN'
+            elif t == 0 and p == 1:
+                etype = 'FP'
+            else:
+                etype = 'FN'  # missed positive
 
-            rec[f'true_{lbl}']  = t
-            rec[f'pred_{lbl}']  = p
-            rec[f'prob_{lbl}']  = prob
+            rec[f'true_{lbl}'] = t
+            rec[f'pred_{lbl}'] = p
+            rec[f'prob_{lbl}'] = prob
             rec[f'etype_{lbl}'] = etype
             if etype in ('FP', 'FN'):
                 n_errors += 1
 
         rec['n_label_errors'] = n_errors
-        rec['any_error']      = n_errors > 0
+        rec['any_error'] = n_errors > 0
         rec['exact_match'] = np.array_equal(
             true_labels[i], pred_binary[i])
         records.append(rec)
@@ -267,16 +275,16 @@ def build_error_df(df, true_labels, pred_binary, pred_probs,
 
 
 def compute_per_label_metrics(true_labels, pred_binary, pred_probs,
-                               label_cols=LABEL_COLS):
+                              label_cols=LABEL_COLS):
     metrics = {}
 
     metrics['subset_accuracy'] = np.all(
         true_labels == pred_binary, axis=1).mean()
-    metrics['hamming_loss']    = hamming_loss(true_labels, pred_binary)
-    metrics['macro_f1']        = f1_score(true_labels, pred_binary,
-                                          average='macro', zero_division=0)
-    metrics['micro_f1']        = f1_score(true_labels, pred_binary,
-                                          average='micro', zero_division=0)
+    metrics['hamming_loss'] = hamming_loss(true_labels, pred_binary)
+    metrics['macro_f1'] = f1_score(true_labels, pred_binary,
+                                   average='macro', zero_division=0)
+    metrics['micro_f1'] = f1_score(true_labels, pred_binary,
+                                   average='micro', zero_division=0)
     try:
         metrics['macro_auc'] = roc_auc_score(
             true_labels, pred_probs, average='macro')
@@ -292,7 +300,7 @@ def compute_per_label_metrics(true_labels, pred_binary, pred_probs,
         metrics[f'{lbl}_fn'] = int(fn)
         metrics[f'{lbl}_fn_rate'] = round(fn / (fn + tp + 1e-9), 4)
         metrics[f'{lbl}_fp_rate'] = round(fp / (fp + tn + 1e-9), 4)
-        metrics[f'{lbl}_f1']      = round(
+        metrics[f'{lbl}_f1'] = round(
             f1_score(true_labels[:, i], pred_binary[:, i], zero_division=0), 4)
         try:
             metrics[f'{lbl}_auc'] = round(
@@ -304,9 +312,9 @@ def compute_per_label_metrics(true_labels, pred_binary, pred_probs,
 
 
 def plot_multilabel_confusion_matrices(true_labels, pred_binary, model_name,
-                                        dataset_name, output_dir,
-                                        label_cols=LABEL_COLS):
-    n     = len(label_cols)
+                                       dataset_name, output_dir,
+                                       label_cols=LABEL_COLS):
+    n = len(label_cols)
     fig, axes = plt.subplots(1, n, figsize=(5 * n, 4))
     fig.suptitle(f'{model_name} — {dataset_name}\nPer-label Confusion Matrices',
                  fontsize=11, fontweight='bold')
@@ -314,7 +322,7 @@ def plot_multilabel_confusion_matrices(true_labels, pred_binary, model_name,
     # IEEE-style blue colormap for confusion matrix cells
     mcm = multilabel_confusion_matrix(true_labels, pred_binary)
     for ax, (i, lbl) in zip(axes, enumerate(label_cols)):
-        cm   = mcm[i]
+        cm = mcm[i]
         tn, fp, fn, tp = cm.ravel()
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
                     xticklabels=['Pred 0', 'Pred 1'],
@@ -335,7 +343,7 @@ def plot_multilabel_confusion_matrices(true_labels, pred_binary, model_name,
                 color=_ERROR_COLORS['FP'], fontweight='bold')
 
     plt.tight_layout()
-    tag  = f'{model_name.lower().replace("-","_")}_{dataset_name.lower()}'
+    tag = f'{model_name.lower().replace("-", "_")}_{dataset_name.lower()}'
     path = os.path.join(output_dir, f'cm_{tag}.png')
     plt.savefig(path, dpi=150, bbox_inches='tight')
     plt.close()
@@ -345,8 +353,8 @@ def plot_multilabel_confusion_matrices(true_labels, pred_binary, model_name,
 def plot_error_profiles(error_df, model_name, dataset_name, output_dir,
                         label_cols=LABEL_COLS):
     props = [
-        ('length',         'Sequence length (AA)'),
-        ('charge',         'Total charge'),
+        ('length', 'Sequence length (AA)'),
+        ('charge', 'Total charge'),
         ('hydrophobicity', 'Average hydrophobicity (KD)'),
     ]
 
@@ -373,7 +381,7 @@ def plot_error_profiles(error_df, model_name, dataset_name, output_dir,
             ax.legend(fontsize=8)
 
         plt.tight_layout()
-        tag  = f'{model_name.lower().replace("-","_")}_{dataset_name.lower()}_{lbl}'
+        tag = f'{model_name.lower().replace("-", "_")}_{dataset_name.lower()}_{lbl}'
         path = os.path.join(output_dir, f'error_profiles_{tag}.png')
         plt.savefig(path, dpi=150, bbox_inches='tight')
         plt.close()
@@ -382,7 +390,7 @@ def plot_error_profiles(error_df, model_name, dataset_name, output_dir,
 
 def plot_confidence_errors(error_df, model_name, dataset_name, output_dir,
                            label_cols=LABEL_COLS):
-    n      = len(label_cols)
+    n = len(label_cols)
     fig, axes = plt.subplots(1, n, figsize=(6 * n, 5))
     fig.suptitle(f'{model_name} — {dataset_name}\nConfidence vs length',
                  fontsize=11, fontweight='bold')
@@ -405,7 +413,7 @@ def plot_confidence_errors(error_df, model_name, dataset_name, output_dir,
         ax.legend(fontsize=7)
 
     plt.tight_layout()
-    tag  = f'{model_name.lower().replace("-","_")}_{dataset_name.lower()}'
+    tag = f'{model_name.lower().replace("-", "_")}_{dataset_name.lower()}'
     path = os.path.join(output_dir, f'confidence_{tag}.png')
     plt.savefig(path, dpi=150, bbox_inches='tight')
     plt.close()
@@ -434,20 +442,20 @@ def plot_fn_rate_comparison(summary_rows, output_dir, label_cols=LABEL_COLS):
         ax.set_ylabel('Model', fontsize=10)
         plt.tight_layout()
         path = os.path.join(output_dir,
-               f'fn_rate_heatmap_{ds_name.lower()}.png')
+                            f'fn_rate_heatmap_{ds_name.lower()}.png')
         plt.savefig(path, dpi=150, bbox_inches='tight')
         plt.close()
         print(f'  Saved: {path}')
 
 
 def plot_per_label_f1_comparison(summary_rows, output_dir, label_cols=LABEL_COLS):
-    models   = list(dict.fromkeys(r['model']   for r in summary_rows))
+    models = list(dict.fromkeys(r['model'] for r in summary_rows))
     datasets = list(dict.fromkeys(r['dataset'] for r in summary_rows))
 
     for ds_name in datasets:
         subset = {r['model']: r for r in summary_rows if r['dataset'] == ds_name}
-        x      = np.arange(len(label_cols))
-        width  = 0.25
+        x = np.arange(len(label_cols))
+        width = 0.25
 
         fig, ax = plt.subplots(figsize=(12, 5))
         for offset, mname in zip(
@@ -471,14 +479,14 @@ def plot_per_label_f1_comparison(summary_rows, output_dir, label_cols=LABEL_COLS
         ax.legend(title='Model', fontsize=9)
         plt.tight_layout()
         path = os.path.join(output_dir,
-               f'per_label_f1_{ds_name.lower()}.png')
+                            f'per_label_f1_{ds_name.lower()}.png')
         plt.savefig(path, dpi=150, bbox_inches='tight')
         plt.close()
         print(f'  Saved: {path}')
 
 
 def plot_n_label_errors_distribution(error_df, model_name,
-                                      dataset_name, output_dir):
+                                     dataset_name, output_dir):
     counts = error_df['n_label_errors'].value_counts().sort_index()
     fig, ax = plt.subplots(figsize=(7, 4))
     bars = ax.bar(counts.index, counts.values,
@@ -492,7 +500,7 @@ def plot_n_label_errors_distribution(error_df, model_name,
                  fontsize=11, fontweight='bold')
     ax.set_xticks(counts.index)
     plt.tight_layout()
-    tag  = f'{model_name.lower().replace("-","_")}_{dataset_name.lower()}'
+    tag = f'{model_name.lower().replace("-", "_")}_{dataset_name.lower()}'
     path = os.path.join(output_dir, f'n_label_errors_{tag}.png')
     plt.savefig(path, dpi=150, bbox_inches='tight')
     plt.close()
@@ -500,27 +508,27 @@ def plot_n_label_errors_distribution(error_df, model_name,
 
 
 def plot_aggregate_metrics_summary(summary_rows, output_dir):
-    df       = pd.DataFrame(summary_rows)
-    models   = df['model'].unique()
+    df = pd.DataFrame(summary_rows)
+    models = df['model'].unique()
     datasets = df['dataset'].unique()
 
     metrics_cfg = [
         ('subset_accuracy', 'Subset Accuracy'),
-        ('macro_f1',        'Macro F1'),
-        ('macro_auc',       'Macro AUC'),
-        ('hamming_loss',    'Hamming Loss'),
+        ('macro_f1', 'Macro F1'),
+        ('macro_auc', 'Macro AUC'),
+        ('hamming_loss', 'Hamming Loss'),
     ]
 
-    x     = np.arange(len(models))
+    x = np.arange(len(models))
     width = 0.35
 
     fig, axes = plt.subplots(1, len(metrics_cfg),
-                              figsize=(5 * len(metrics_cfg), 5))
+                             figsize=(5 * len(metrics_cfg), 5))
     fig.suptitle('Aggregate Metrics per model and dataset',
                  fontsize=12, fontweight='bold')
 
     for ax, (metric, title) in zip(axes, metrics_cfg):
-        for offset, ds in zip([-width/2, width/2], datasets):
+        for offset, ds in zip([-width / 2, width / 2], datasets):
             vals = []
             for m in models:
                 row = df[(df['model'] == m) & (df['dataset'] == ds)]
@@ -557,7 +565,7 @@ if __name__ == '__main__':
     print(f'Device: {device}')
     if torch.cuda.is_available():
         print(f'GPU   : {torch.cuda.get_device_name(0)}')
-        print(f'VRAM  : {torch.cuda.get_device_properties(0).total_memory/1e9:.1f} GB')
+        print(f'VRAM  : {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB')
     print('=' * 70)
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -571,9 +579,9 @@ if __name__ == '__main__':
         datasets[name] = df
 
     pth_map = {
-        'ESM-2':    {'dbAMP': ESM2_DBAMP_PTH,     'DRAMP': ESM2_DRAMP_PTH},
-        'ProtBERT': {'dbAMP': PROTBERT_DBAMP_PTH,  'DRAMP': PROTBERT_DRAMP_PTH},
-        'ProtT5':   {'dbAMP': PROTT5_DBAMP_PTH,    'DRAMP': PROTT5_DRAMP_PTH},
+        'ESM-2': {'dbAMP': ESM2_DBAMP_PTH, 'DRAMP': ESM2_DRAMP_PTH},
+        'ProtBERT': {'dbAMP': PROTBERT_DBAMP_PTH, 'DRAMP': PROTBERT_DRAMP_PTH},
+        'ProtT5': {'dbAMP': PROTT5_DBAMP_PTH, 'DRAMP': PROTT5_DRAMP_PTH},
     }
 
     model_configs = [
@@ -593,18 +601,18 @@ if __name__ == '__main__':
     ]
 
     all_error_dfs = []
-    summary_rows  = []
+    summary_rows = []
 
     for model_name, model_fn, tok_fn, mtype in model_configs:
-        print(f'\n{"─"*60}')
+        print(f'\n{"─" * 60}')
         print(f'── {model_name}')
-        print(f'{"─"*60}')
+        print(f'{"─" * 60}')
 
         tokenizer = tok_fn()
 
         for dataset_name, df in datasets.items():
             print(f'\n  [{dataset_name}]')
-            pth       = pth_map[model_name][dataset_name]
+            pth = pth_map[model_name][dataset_name]
             model_obj = load_model(model_fn(), pth, f'{model_name} [{dataset_name}]')
 
             true_labels = df[LABEL_COLS].values.astype(int)
@@ -651,8 +659,8 @@ if __name__ == '__main__':
     plot_aggregate_metrics_summary(summary_rows, OUTPUT_DIR)
 
     full_error_df = pd.concat(all_error_dfs, ignore_index=True)
-    errors_only   = full_error_df[full_error_df['any_error']]
-    csv_path      = os.path.join(OUTPUT_DIR, 'error_analysis_summary.csv')
+    errors_only = full_error_df[full_error_df['any_error']]
+    csv_path = os.path.join(OUTPUT_DIR, 'error_analysis_summary.csv')
     errors_only.to_csv(csv_path, index=False)
     print(f'\nTotal sequences with >=1 wrong labels: {len(errors_only)}')
     print(f'Saved: {csv_path}')
@@ -660,7 +668,7 @@ if __name__ == '__main__':
     print('\n── SUMMARY TABLE ──────────────────────────────────────────────────')
     summary_df = pd.DataFrame(summary_rows)
     print(summary_df[['model', 'dataset', 'subset_accuracy', 'macro_f1',
-                       'macro_auc', 'hamming_loss']].to_string(index=False))
+                      'macro_auc', 'hamming_loss']].to_string(index=False))
     summary_df.to_csv(
         os.path.join(OUTPUT_DIR, 'metrics_summary.csv'), index=False)
 
