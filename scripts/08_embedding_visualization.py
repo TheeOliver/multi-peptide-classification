@@ -36,7 +36,7 @@ DBAMP_TEST_CSV = '../data/dbamp_test.csv'
 DRAMP_TEST_CSV = '../data/dramp_test.csv'
 
 USE_SAVED_WEIGHTS = True
-OUTPUT_DIR = '../results/embedding_viz'
+OUTPUT_DIR = '../results/ASL/embedding_viz'
 
 LABEL_COLS = ['antimicrobial', 'antiviral', 'antifungal', 'anticancer']
 N_LABELS = len(LABEL_COLS)
@@ -57,43 +57,43 @@ RANDOM_STATE = 42
 #   #A2142F  dark red        #808080  neutral gray
 
 LABEL_COLORS = {
-    'antimicrobial': '#0072BD',   # IEEE blue
-    'antiviral':     '#D95319',   # orange-red
-    'antifungal':    '#77AC30',   # green
-    'anticancer':    '#7E2F8E',   # purple
+    'antimicrobial': '#0072BD',  # IEEE blue
+    'antiviral': '#D95319',  # orange-red
+    'antifungal': '#77AC30',  # green
+    'anticancer': '#7E2F8E',  # purple
 }
 
 # Colour for co-occurrence scatter
 _CO_COLORS = {
-    'both':    '#7E2F8E',   # purple
-    'only_a':  '#D95319',   # orange-red
-    'only_b':  '#0072BD',   # IEEE blue
-    'neither': '#CCCCCC',   # light gray
+    'both': '#7E2F8E',  # purple
+    'only_a': '#D95319',  # orange-red
+    'only_b': '#0072BD',  # IEEE blue
+    'neither': '#CCCCCC',  # light gray
 }
 
 # Dataset bar colours used in the silhouette summary
 _DS_COLORS = {
-    'dbAMP': '#0072BD',   # IEEE blue
-    'DRAMP': '#D95319',   # orange-red
+    'dbAMP': '#0072BD',  # IEEE blue
+    'DRAMP': '#D95319',  # orange-red
 }
 
 # Global matplotlib style – clean, publication-ready
 plt.rcParams.update({
-    'figure.dpi':        150,
-    'font.family':       'serif',
-    'font.size':         9,
-    'axes.linewidth':    0.8,
-    'axes.edgecolor':    '#333333',
-    'axes.grid':         True,
-    'grid.color':        '#CCCCCC',
-    'grid.linewidth':    0.5,
-    'grid.alpha':        0.5,
-    'xtick.direction':   'in',
-    'ytick.direction':   'in',
+    'figure.dpi': 150,
+    'font.family': 'serif',
+    'font.size': 9,
+    'axes.linewidth': 0.8,
+    'axes.edgecolor': '#333333',
+    'axes.grid': True,
+    'grid.color': '#CCCCCC',
+    'grid.linewidth': 0.5,
+    'grid.alpha': 0.5,
+    'xtick.direction': 'in',
+    'ytick.direction': 'in',
     'xtick.major.width': 0.8,
     'ytick.major.width': 0.8,
     'legend.framealpha': 0.9,
-    'legend.edgecolor':  '#AAAAAA',
+    'legend.edgecolor': '#AAAAAA',
 })
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -419,16 +419,16 @@ def plot_label_co_occurrence_in_embedding(model_name, dataset_name,
 
         for label_key, mask in [
             ('neither', (a == 0) & (b == 0)),
-            ('only_a',  (a == 1) & (b == 0)),
-            ('only_b',  (a == 0) & (b == 1)),
-            ('both',    (a == 1) & (b == 1)),
+            ('only_a', (a == 1) & (b == 0)),
+            ('only_b', (a == 0) & (b == 1)),
+            ('both', (a == 1) & (b == 1)),
         ]:
             if mask.sum() == 0:
                 continue
             legend_lbl = {
-                'both':    f'both (n={mask.sum()})',
-                'only_a':  f'only {la} (n={mask.sum()})',
-                'only_b':  f'only {lb} (n={mask.sum()})',
+                'both': f'both (n={mask.sum()})',
+                'only_a': f'only {la} (n={mask.sum()})',
+                'only_b': f'only {lb} (n={mask.sum()})',
                 'neither': f'neither (n={mask.sum()})',
             }[label_key]
             ax.scatter(emb_umap[mask, 0], emb_umap[mask, 1],
@@ -565,9 +565,9 @@ if __name__ == '__main__':
     summary_rows = []
 
     pth_map = {
-        'ESM-2':    {'dbAMP': ESM2_DBAMP_PTH,     'DRAMP': ESM2_DRAMP_PTH},
-        'ProtBERT': {'dbAMP': PROTBERT_DBAMP_PTH,  'DRAMP': PROTBERT_DRAMP_PTH},
-        'ProtT5':   {'dbAMP': PROTT5_DBAMP_PTH,    'DRAMP': PROTT5_DRAMP_PTH},
+        'ESM-2': {'dbAMP': ESM2_DBAMP_PTH, 'DRAMP': ESM2_DRAMP_PTH},
+        'ProtBERT': {'dbAMP': PROTBERT_DBAMP_PTH, 'DRAMP': PROTBERT_DRAMP_PTH},
+        'ProtT5': {'dbAMP': PROTT5_DBAMP_PTH, 'DRAMP': PROTT5_DRAMP_PTH},
     }
 
     model_configs = [

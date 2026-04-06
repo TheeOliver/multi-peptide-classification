@@ -1,0 +1,7 @@
+model,dataset,tsne_mean_sil_true,umap_mean_sil_true,subset_accuracy_pct,tsne_sil_antimicrobial,tsne_sil_antiviral,tsne_sil_antifungal,tsne_sil_anticancer,umap_sil_antimicrobial,umap_sil_antiviral,umap_sil_antifungal,umap_sil_anticancer,acc_antimicrobial,acc_antiviral,acc_antifungal,acc_anticancer
+ESM-2,dbAMP,0.0998,0.043,63.48,0.23199999332427979,0.2272,0.034,-0.094,0.25110000371932983,0.2495,-0.0289,-0.2998,94.84,92.39,69.31,99.84
+ESM-2,DRAMP,0.1414,0.113,67.13,,0.0537,0.1661,0.2044,,0.0116,0.1735,0.1538,100.0,96.06,72.64,97.05
+ProtBERT,dbAMP,0.0729,0.056,67.99,0.14990000426769257,0.1582,0.0589,-0.0753,0.2069000005722046,0.2169,0.0026,-0.2023,94.76,93.79,73.61,99.84
+ProtBERT,DRAMP,0.0399,0.0166,54.72,,-0.1064,0.1793,0.0469,,-0.2026,0.1504,0.102,100.0,95.87,60.04,97.24
+ProtT5,dbAMP,-0.1322,-0.1809,47.57,-0.13099999725818634,-0.1181,-0.0367,-0.243,-0.18629999458789825,-0.1548,-0.0623,-0.3203,91.04,92.63,53.63,99.84
+ProtT5,DRAMP,0.071,0.0764,71.06,,-0.0796,0.2439,0.0488,,-0.0877,0.2152,0.1016,100.0,96.26,75.59,96.46
