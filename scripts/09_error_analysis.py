@@ -485,6 +485,51 @@ def plot_per_label_f1_comparison(summary_rows, output_dir, label_cols=LABEL_COLS
         print(f'  Saved: {path}')
 
 
+def plot_per_label_auc_comparison(summary_rows, output_dir, label_cols=LABEL_COLS):
+    models = list(dict.fromkeys(r['model'] for r in summary_rows))
+    datasets = list(dict.fromkeys(r['dataset'] for r in summary_rows))
+
+    for ds_name in datasets:
+        subset = {r['model']: r for r in summary_rows if r['dataset'] == ds_name}
+        x = np.arange(len(label_cols))
+        width = 0.25
+
+        fig, ax = plt.subplots(figsize=(12, 5))
+        for offset, mname in zip(
+                np.linspace(-width, width, len(models)), models):
+            if mname not in subset:
+                continue
+            vals = []
+            for lbl in label_cols:
+                v = subset[mname].get(f'{lbl}_auc', None)
+                vals.append(float(v) if v is not None else 0.0)
+
+            bars = ax.bar(x + offset, vals, width,
+                          label=mname,
+                          color=_MODEL_COLORS.get(mname, '#808080'),
+                          alpha=0.85, edgecolor='white', linewidth=0.8)
+            ax.bar_label(bars, fmt='%.3f', fontsize=7, padding=2)
+
+        ax.set_title(f'Per-label AUC-ROC per model [{ds_name}]',
+                     fontsize=11, fontweight='bold')
+        ax.set_xticks(x)
+        ax.set_xticklabels(label_cols, fontsize=10)
+        ax.set_ylabel('AUC-ROC')
+        ax.set_ylim([0, 1.12])
+
+        # Reference line at 0.5 (random baseline)
+        ax.axhline(0.5, color='#808080', linestyle='--',
+                   linewidth=0.9, alpha=0.7, label='Random (0.5)')
+
+        ax.legend(title='Model', fontsize=9)
+        plt.tight_layout()
+        path = os.path.join(output_dir,
+                            f'per_label_auc_{ds_name.lower()}.png')
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        print(f'  Saved: {path}')
+
+
 def plot_n_label_errors_distribution(error_df, model_name,
                                      dataset_name, output_dir):
     counts = error_df['n_label_errors'].value_counts().sort_index()
@@ -657,6 +702,7 @@ if __name__ == '__main__':
     plot_fn_rate_comparison(summary_rows, OUTPUT_DIR)
     plot_per_label_f1_comparison(summary_rows, OUTPUT_DIR)
     plot_aggregate_metrics_summary(summary_rows, OUTPUT_DIR)
+    plot_per_label_auc_comparison(summary_rows, OUTPUT_DIR)
 
     full_error_df = pd.concat(all_error_dfs, ignore_index=True)
     errors_only = full_error_df[full_error_df['any_error']]
